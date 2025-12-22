@@ -7,9 +7,11 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_MAKE_PROGRAM": "ninja.exe",
+        "CMAKE_MAKE_PROGRAM": "ninja",
         "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++"
+        "CMAKE_CXX_COMPILER": "g++",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg_overlay_ports",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     }
   ]

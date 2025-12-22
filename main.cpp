@@ -1,6 +1,5 @@
-#pragma warning( disable : 4819 )
 #include <opencv2/opencv.hpp>
-#include <onnxruntime_cxx_api.h>
+#include <onnxruntime/onnxruntime_cxx_api.h>
 #include <vector>
 #include <iostream>
 
@@ -34,11 +33,12 @@ int main() {
     std::cout << "Preprocess done.\n";
     std::cout << "Input tensor size: " << input_tensor.size() << std::endl;
 
-    Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "yolo");
+    // Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "yolo");
+    Ort::Env env(ORT_LOGGING_LEVEL_ERROR, "onnx");
     Ort::SessionOptions session_options;
     session_options.SetIntraOpNumThreads(1);
 
-    Ort::Session session(env, L"./models/yolov8n.onnx", session_options);
+    Ort::Session session(env, "./models/yolov8n.onnx", session_options);
 
     Ort::AllocatorWithDefaultOptions allocator;
 
