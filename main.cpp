@@ -4,7 +4,7 @@
 #include <iostream>
 
 int main() {
-    cv::Mat img = cv::imread("images/bus.jpg");
+    cv::Mat img = cv::imread("images/times.jpg");
     if (img.empty()) {
         std::cerr << "Failed to load image\n";
         return -1;
@@ -30,10 +30,6 @@ int main() {
         );
     }
 
-    std::cout << "Preprocess done.\n";
-    std::cout << "Input tensor size: " << input_tensor.size() << std::endl;
-
-    // Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "yolo");
     Ort::Env env(ORT_LOGGING_LEVEL_ERROR, "onnx");
     Ort::SessionOptions session_options;
     session_options.SetIntraOpNumThreads(1);
@@ -47,11 +43,6 @@ int main() {
     auto input_shape = session.GetInputTypeInfo(0)
                            .GetTensorTypeAndShapeInfo()
                            .GetShape();
-
-    std::cout << "Input name: " << input_name << "\n";
-    std::cout << "Input shape: ";
-    for (auto s : input_shape) std::cout << s << " ";
-    std::cout << "\n";
 
     std::vector<int64_t> input_dims = {1, 3, 640, 640};
     Ort::MemoryInfo mem_info = Ort::MemoryInfo::CreateCpu(
@@ -80,9 +71,30 @@ int main() {
                          .GetTensorTypeAndShapeInfo()
                          .GetShape();
 
-    std::cout << "Output shape: ";
-    for (auto s : out_shape) std::cout << s << " ";
-    std::cout << "\n";
+    float* out = output_tensors[0].GetTensorMutableData<float>();
+    float fThreshold = 0.5;
+
+    std::map<unsigned int, std::pair<unsigned short,float>> mapBeastType;
+    for (auto i=0;i<8400;++i) {
+        // 找出80类中，本检测单元概率最大的类别
+        std::pair<int,float> pairBestType(0,-1);
+        for (auto j=0;j<80;++j) {
+            float fThis = out[(4 + j) * 8400 + i];
+            float fPossibility = fThis;//1.0f / (1.0f + std::exp(-fThis));
+            if (fPossibility>pairBestType.second) {
+                pairBestType.second = fPossibility;
+                pairBestType.first = j;
+            }
+        }
+        if (pairBestType.second > 0 && pairBestType.second>fThreshold) {
+            mapBeastType[i].first = pairBestType.first;
+            mapBeastType[i].second = pairBestType.second;
+        }
+    }
+
+    for (auto& elem:mapBeastType) {
+        std::cout << elem.first << "\t" << elem.second.first<< "\t" << elem.second.second << std::endl;
+    }
 
     return 0;
 }

@@ -11,7 +11,9 @@
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
         "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg_overlay_ports",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_FLAGS_RELWITHDEBINFO": "-O0 -g",
+        "CMAKE_CXX_FLAGS_RELWITHDEBINFO": "-O0 -g"
       }
     }
   ]
