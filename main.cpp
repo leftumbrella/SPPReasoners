@@ -1,6 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <onnxruntime/onnxruntime_cxx_api.h>
 #include <vector>
+#include <chrono>
 #include <iostream>
 struct Border {
     float fPossibility;
@@ -9,30 +10,53 @@ struct Border {
     unsigned short usX2;
     unsigned short usY2;
 };
+
+void print_model_inputs(Ort::Session& session) {
+    Ort::AllocatorWithDefaultOptions allocator;
+
+    size_t input_count = session.GetInputCount();
+    std::cout << "Input count: " << input_count << std::endl;
+
+    for (size_t i = 0; i < input_count; ++i) {
+        Ort::AllocatedStringPtr input_name =
+            session.GetInputNameAllocated(i, allocator);
+
+        std::cout << "Input " << i
+                  << " name: " << input_name.get() << std::endl;
+
+        Ort::TypeInfo type_info = session.GetInputTypeInfo(i);
+        auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
+
+        auto shape = tensor_info.GetShape();
+        std::cout << "  Shape: ";
+        for (auto d : shape) std::cout << d << " ";
+        std::cout << std::endl;
+    }
+}
+
 int main() {
-    cv::Mat img = cv::imread("images/times.jpg");
-    if (img.empty()) {
-        std::cerr << "Failed to load image\n";
+    cv::Mat imgSrc = cv::imread("images/times.jpg");
+    if (imgSrc.empty()) {
         return -1;
     }
 
-    cv::Mat img_resized;
-    cv::resize(img, img_resized, cv::Size(640, 640));
+    cv::Mat imgResized640;
+    cv::resize(imgSrc, imgResized640, cv::Size(640, 640));
 
-    cv::Mat img_rgb;
-    cv::cvtColor(img_resized, img_rgb, cv::COLOR_BGR2RGB);
-    img_rgb.convertTo(img_rgb, CV_32F, 1.0/255.0);
+    cv::Mat imgRGB;
+    cv::cvtColor(imgResized640, imgRGB, cv::COLOR_BGR2RGB);
+    imgRGB.convertTo(imgRGB, CV_32F, 1.0/255.0);
 
-    std::vector<cv::Mat> chw(3);
-    cv::split(img_rgb, chw);
+    std::vector<cv::Mat> vecRGBChannelData(3);
+    cv::split(imgRGB, vecRGBChannelData);
 
     std::vector<float> input_tensor;
     input_tensor.reserve(1 * 3 * 640 * 640);
     for (int c = 0; c < 3; ++c) {
         input_tensor.insert(
             input_tensor.end(),
-            (float*)(chw[c]).datastart,
-            (float*)(chw[c]).dataend
+            (float*)(vecRGBChannelData[c]).datastart,
+            (float*)(vecRGBChannelData[c]).dataend
         );
     }
 
@@ -40,7 +64,11 @@ int main() {
     Ort::SessionOptions session_options;
     session_options.SetIntraOpNumThreads(1);
 
-    Ort::Session session(env, "./models/yolov8n.onnx", session_options);
+    Ort::Session session(env, "./models/yolov8x.onnx", session_options);
+    size_t input_count = session.GetInputCount();
+    std::cout << "Input count: " << input_count << std::endl;
+
+    print_model_inputs(session);
 
     Ort::AllocatorWithDefaultOptions allocator;
 
@@ -64,6 +92,9 @@ int main() {
 
     const char* output_names[] = {"output0"};
 
+    auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
     auto output_tensors = session.Run(
         Ort::RunOptions{nullptr},
         &input_name,
@@ -72,6 +103,10 @@ int main() {
         output_names,
         1
     );
+    auto stop_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
+    std::cout << "Time:" << stop_time - start_time << std::endl;
 
     auto out_shape = output_tensors[0]
                          .GetTensorTypeAndShapeInfo()
@@ -112,10 +147,10 @@ int main() {
     }
 
     for (auto& elem:mapBeastType) {
-        cv::rectangle(img_resized,cv::Point(elem.second.second.usX1,elem.second.second.usY1),cv::Point(elem.second.second.usX2,elem.second.second.usY2), cv::Scalar(0, 255, 0),3);
+        cv::rectangle(imgResized640,cv::Point(elem.second.second.usX1,elem.second.second.usY1),cv::Point(elem.second.second.usX2,elem.second.second.usY2), cv::Scalar(0, 255, 0),1);
         std::cout << elem.first << "\t" << elem.second.first<< "\t" << elem.second.second.fPossibility << std::endl;
     }
-    cv::imshow("box", img_resized);
+    cv::imshow("box", imgResized640);
     cv::waitKey(0);
     return 0;
 }
