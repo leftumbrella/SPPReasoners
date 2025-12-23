@@ -13,5 +13,6 @@ target_link_libraries(${TARGET_NAME} PRIVATE
         onnxruntime::onnxruntime
         opencv_core
         opencv_imgproc
+        opencv_highgui
         opencv_imgcodecs
 )
