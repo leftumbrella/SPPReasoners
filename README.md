@@ -3,6 +3,6 @@
 conan profile detect
 
 conan install . -pr=relwithdebinfo --build=missing
-cmake --preset conan-release
-cmake --build --preset conan-release
+cmake --preset conan-relwithdebinfo
+cmake --build --preset conan-relwithdebinfo
 ```
